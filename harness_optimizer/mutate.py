@@ -56,7 +56,13 @@ def make_variant_dir(cfg: Config, parent: Node, variant_id: str) -> Path:
     dest = cfg.work_dir / "variants" / variant_id
     if dest.exists():
         shutil.rmtree(dest)
-    shutil.copytree(parent.dir, dest, ignore=shutil.ignore_patterns(".git"))
+    # target/ (and node_modules/) are rebuildable build artifacts, often
+    # multiple GB (e.g. a Rust release build) -- copying them per variant
+    # would blow up disk usage and I/O time for no benefit.
+    shutil.copytree(
+        parent.dir, dest,
+        ignore=shutil.ignore_patterns(".git", "target", "node_modules"),
+    )
     return dest
 
 
@@ -85,7 +91,8 @@ def run_mutation(cfg: Config, variant_dir: Path, prompt: str) -> tuple[bool, str
 
 def changed_files(parent_dir: Path, variant_dir: Path) -> list[str]:
     proc = subprocess.run(
-        ["diff", "-rq", "--exclude=.git", str(parent_dir), str(variant_dir)],
+        ["diff", "-rq", "--exclude=.git", "--exclude=target", "--exclude=node_modules",
+         str(parent_dir), str(variant_dir)],
         capture_output=True, text=True,
     )
     changed = []
@@ -120,7 +127,8 @@ def enforce_allowed_paths(cfg: Config, parent_dir: Path, variant_dir: Path) -> s
 
 def diff_against_parent(parent_dir: Path, variant_dir: Path) -> str:
     proc = subprocess.run(
-        ["diff", "-ruN", "--exclude=.git", str(parent_dir), str(variant_dir)],
+        ["diff", "-ruN", "--exclude=.git", "--exclude=target", "--exclude=node_modules",
+         str(parent_dir), str(variant_dir)],
         capture_output=True,
         text=True,
     )

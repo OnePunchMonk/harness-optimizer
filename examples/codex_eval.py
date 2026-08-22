@@ -91,23 +91,27 @@ def run_task(codex_bin: Path, task_dir: Path, port: int, codex_home: Path) -> bo
     shutil.copytree(task_dir / "repo", work, dirs_exist_ok=True)
 
     codex_home.mkdir(parents=True, exist_ok=True)
+    # Root-level keys must precede any [table] header in TOML, or they get
+    # parsed as belonging to that table instead of the document root.
     (codex_home / "config.toml").write_text(f"""
-[model_providers.claude-shim]
-name = "claude-shim"
-base_url = "http://127.0.0.1:{port}/v1"
-wire_api = "responses"
-
 model_provider = "claude-shim"
 model = "claude-shim"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
+
+[model_providers.claude-shim]
+name = "claude-shim"
+base_url = "http://127.0.0.1:{port}/v1"
+wire_api = "responses"
+requires_openai_auth = false
 """)
 
     try:
         subprocess.run(
-            [str(codex_bin), "exec", task["prompt"]],
+            [str(codex_bin), "exec", "--skip-git-repo-check", task["prompt"]],
             cwd=str(work),
             env={"CODEX_HOME": str(codex_home), "PATH": "/usr/bin:/bin:/usr/local/bin"},
+            stdin=subprocess.DEVNULL,
             capture_output=True, text=True, timeout=TASK_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired:
@@ -126,7 +130,7 @@ def main() -> None:
     ap.add_argument("--harness-dir", required=True)
     args = ap.parse_args()
 
-    harness_dir = Path(args.harness_dir)
+    harness_dir = Path(args.harness_dir).resolve()
 
     try:
         codex_bin = build_codex_binary(harness_dir)
