@@ -1,0 +1,5 @@
+.venv/
+.harness_optimizer/
+__pycache__/
+*.pyc
+*.egg-info/

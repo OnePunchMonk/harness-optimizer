@@ -1,0 +1,22 @@
+# Copy to config.yaml and edit.
+
+harness_dir: /path/to/target/harness   # the harness codebase to evolve
+work_dir: .harness_optimizer           # where variants/archive/logs are kept
+
+eval_cmd: >
+  python examples/dummy_eval.py --harness-dir {harness_dir}
+
+objective: >
+  Improve task success rate on the eval suite while keeping average tool
+  calls per task low.
+
+generations: 10
+children_per_generation: 4
+archive_size_cap: 200
+parent_selection: score_weighted   # score_weighted | uniform | best
+
+mutator_cmd: "claude -p --dangerously-skip-permissions"
+allowed_paths: []                  # e.g. ["prompts/**", "tools/*.json"]
+
+eval_timeout_s: 1800
+mutate_timeout_s: 1800

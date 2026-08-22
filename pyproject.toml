@@ -1,0 +1,18 @@
+[project]
+name = "harness-optimizer"
+version = "0.1.0"
+description = "Evolutionary optimizer for AI agent harnesses (prompts, tool defs, orchestration)"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+harness-optimizer = "harness_optimizer.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["harness_optimizer*"]
