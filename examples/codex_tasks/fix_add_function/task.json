@@ -1,0 +1,4 @@
+{
+  "prompt": "The function `add` in mathlib.py has a bug: it returns the wrong result. Find and fix it. Run the tests with `pytest` to verify.",
+  "test_cmd": "python3 -m pytest -q"
+}

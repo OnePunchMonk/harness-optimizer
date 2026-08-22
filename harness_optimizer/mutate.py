@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fnmatch
 import shlex
 import shutil
 import subprocess
@@ -80,6 +81,41 @@ def run_mutation(cfg: Config, variant_dir: Path, prompt: str) -> tuple[bool, str
     notes_file = variant_dir / "MUTATION_NOTES.md"
     notes = notes_file.read_text() if notes_file.exists() else proc.stdout[-2000:]
     return True, notes, ""
+
+
+def changed_files(parent_dir: Path, variant_dir: Path) -> list[str]:
+    proc = subprocess.run(
+        ["diff", "-rq", "--exclude=.git", str(parent_dir), str(variant_dir)],
+        capture_output=True, text=True,
+    )
+    changed = []
+    for line in proc.stdout.splitlines():
+        # "Files A/x and B/x differ" or "Only in B: x"
+        if line.startswith("Files ") and " and " in line:
+            path = line.split(" and ", 1)[1].rsplit(" differ", 1)[0]
+        elif line.startswith("Only in "):
+            rest = line[len("Only in "):]
+            dirpart, fname = rest.rsplit(": ", 1)
+            path = str(Path(dirpart) / fname)
+        else:
+            continue
+        try:
+            rel = str(Path(path).relative_to(variant_dir))
+        except ValueError:
+            continue
+        if rel != "MUTATION_NOTES.md":
+            changed.append(rel)
+    return changed
+
+
+def enforce_allowed_paths(cfg: Config, parent_dir: Path, variant_dir: Path) -> str:
+    """Returns an error string if the mutation touched disallowed files, else ''."""
+    if not cfg.allowed_paths:
+        return ""
+    for rel in changed_files(parent_dir, variant_dir):
+        if not any(fnmatch.fnmatch(rel, pat) for pat in cfg.allowed_paths):
+            return f"mutation touched disallowed path: {rel}"
+    return ""
 
 
 def diff_against_parent(parent_dir: Path, variant_dir: Path) -> str:

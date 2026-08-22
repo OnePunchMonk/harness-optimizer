@@ -1,0 +1,39 @@
+# Real target config: evolve openai/codex's actual production harness.
+#
+# Scores each variant by: rebuilding codex-cli (prompt files are compiled in
+# via include_str!, so a real rebuild is required), then running it via the
+# Claude shim against the toy task suite in examples/codex_tasks/, graded by
+# whether each task's tests pass afterward.
+#
+# Costs real money per eval: each codex "model call" during a task run is a
+# `claude -p` subprocess call. Keep children_per_generation and the task
+# suite small while iterating.
+
+harness_dir: targets/codex/codex-rs
+work_dir: .harness_optimizer_codex
+
+eval_cmd: >
+  python3 examples/codex_eval.py --harness-dir {harness_dir}
+
+objective: >
+  Improve the agent's ability to correctly complete coding tasks (as
+  measured by the task test suite passing) without adding unnecessary tool
+  calls or verbosity to the base instructions.
+
+generations: 5
+children_per_generation: 2
+archive_size_cap: 100
+parent_selection: score_weighted
+
+mutator_cmd: "claude -p --dangerously-skip-permissions"
+
+# Scope mutations to the actual prompt/instruction content, not the whole
+# Rust codebase -- keeps diffs reviewable and rebuilds meaningful.
+allowed_paths:
+  - "protocol/src/prompts/**"
+  - "core/*_prompt.md"
+  - "core/templates/**"
+  - "prompts/templates/**"
+
+eval_timeout_s: 2400
+mutate_timeout_s: 900

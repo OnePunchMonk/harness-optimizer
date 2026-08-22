@@ -9,7 +9,14 @@ from pathlib import Path
 from .archive import Archive
 from .config import Config
 from .evaluate import run_eval
-from .mutate import MUTATION_STRATEGIES, build_prompt, diff_against_parent, make_variant_dir, run_mutation
+from .mutate import (
+    MUTATION_STRATEGIES,
+    build_prompt,
+    diff_against_parent,
+    enforce_allowed_paths,
+    make_variant_dir,
+    run_mutation,
+)
 from .node import Node
 
 
@@ -88,6 +95,13 @@ class Optimizer:
                 node.status, node.error = "mutate_failed", merr
                 self.archive.add(node)
                 _log(f"[{variant_id}] mutation failed: {merr[:200]}")
+                continue
+
+            scope_err = enforce_allowed_paths(self.cfg, Path(parent.dir), variant_dir)
+            if scope_err:
+                node.status, node.error = "mutate_failed", scope_err
+                self.archive.add(node)
+                _log(f"[{variant_id}] rejected: {scope_err}")
                 continue
 
             node.diff = diff_against_parent(Path(parent.dir), variant_dir)
