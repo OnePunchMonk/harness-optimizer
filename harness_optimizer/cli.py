@@ -33,7 +33,12 @@ def cmd_show(args: argparse.Namespace) -> None:
     cfg = Config.load(args.config)
     archive = Archive(cfg.work_dir / "archive.json")
     n = archive.get(args.node_id)
-    print(json.dumps(n.to_json(), indent=2)[:4000])
+    body = json.dumps(n.to_json(), indent=2)
+    if len(body) > 4000:
+        print(body[:4000])
+        print(f"... [truncated, {len(body) - 4000} more characters]")
+    else:
+        print(body)
     if n.diff:
         print("\n--- diff vs parent ---")
         print(n.diff)

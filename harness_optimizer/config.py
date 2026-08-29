@@ -49,4 +49,11 @@ class Config:
         raw = yaml.safe_load(Path(path).read_text())
         raw["harness_dir"] = Path(raw["harness_dir"]).expanduser().resolve()
         raw["work_dir"] = Path(raw.get("work_dir", ".harness_optimizer")).expanduser().resolve()
-        return Config(**raw)
+        valid_fields = {f.name for f in dataclasses.fields(Config)}
+        unknown = set(raw) - valid_fields
+        if unknown:
+            raise ValueError(f"unknown config field(s): {', '.join(sorted(unknown))}")
+        try:
+            return Config(**raw)
+        except TypeError as e:
+            raise ValueError(f"invalid config: {e}") from e

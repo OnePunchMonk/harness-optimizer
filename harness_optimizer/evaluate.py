@@ -36,7 +36,10 @@ def run_eval(cfg: Config, variant_dir: Path) -> tuple[bool, float | None, dict, 
             continue
         if "score" not in result:
             return False, None, {}, f"eval JSON missing 'score' key: {result}"
-        score = float(result["score"])
+        try:
+            score = float(result["score"])
+        except (TypeError, ValueError):
+            return False, None, {}, f"eval JSON 'score' is not numeric: {result['score']!r}"
         metrics = {k: v for k, v in result.items() if k != "score"}
         return True, score, metrics, ""
 
