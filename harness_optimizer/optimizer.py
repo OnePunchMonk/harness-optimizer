@@ -116,7 +116,8 @@ class Optimizer:
 
             node.status, node.score, node.metrics = "scored", score, metrics
             self.archive.add(node)
-            better = " (NEW BEST)" if self.archive.best().id == node.id else ""
+            best_node = self.archive.best()
+            better = " (NEW BEST)" if best_node and best_node.id == node.id else ""
             _log(f"[{variant_id}] score={score}{better}")
 
         self.archive.cap(self.cfg.archive_size_cap)
@@ -127,5 +128,6 @@ class Optimizer:
             _log(f"=== generation {g}/{self.cfg.generations} ===")
             self.step(g)
             best = self.archive.best()
-            _log(f"generation {g} done. best so far: {best.id} score={best.score}")
+            if best:
+                _log(f"generation {g} done. best so far: {best.id} score={best.score}")
         return self.archive.best()

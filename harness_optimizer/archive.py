@@ -33,7 +33,9 @@ class Archive:
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps({k: v.to_json() for k, v in self.nodes.items()}, indent=2))
+        tmp = self.path.with_suffix(self.path.suffix + ".tmp")
+        tmp.write_text(json.dumps({k: v.to_json() for k, v in self.nodes.items()}, indent=2))
+        tmp.replace(self.path)
 
     def scored(self) -> list[Node]:
         return [n for n in self.nodes.values() if n.status == "scored" and n.score is not None]
